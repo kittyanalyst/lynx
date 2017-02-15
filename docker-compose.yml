@@ -1,0 +1,31 @@
+version: '2'
+services:
+  postgres:
+    image: postgres:9.4
+    container_name: postgres
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: developer
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: lynx 
+    volumes:
+      - postgres_db:/var/lib/postgresql/data/pgdata
+    ports:
+      - "54321:5432"
+  oracle:
+    image: wnameless/oracle-xe-11g
+    container_name: oracle
+    volumes:
+      - oracle_xe:/u01/app/oracle
+    ports:
+      - "49160:22"
+      - "49161:1521"
+  jenkins:
+    image: jenkins 
+    container_name: jenkins
+    ports:
+     - "9200:8080"
+     - "9300:50000" 
+volumes:
+  oracle_xe:
+  postgres_db:

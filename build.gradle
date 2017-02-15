@@ -1,0 +1,176 @@
+import groovy.sql.Sql
+
+buildscript {
+	ext {
+		springBootVersion = '1.5.1.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
+}
+plugins {
+	id "org.flywaydb.flyway" version "4.0"
+}
+
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'war'
+apply plugin: 'idea'
+apply plugin: 'pmd'
+
+war {
+	baseName = 'lynx'
+	version = '0.0.1-SNAPSHOT'
+}
+
+sourceCompatibility = 1.8
+
+ext {
+    postgresDriver = 'org.postgresql.Driver'
+    postgresDefaultDbName = 'postgres'
+    postgresDbName = 'lynx'
+
+    postgresSslEnabled = System.getenv('POSTGRES_SSL_ENABLED')
+    postgresHost = System.getenv('POSTGRES_HOST')
+    postgresPort = System.getenv('POSTGRES_PORT')
+    postgresUrl = "jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDbName}"
+    postgresUser = System.getenv('POSTGRES_USER')
+    postgresPassword = System.getenv('POSTGRES_PASSWORD')
+
+    javaGeneratedSourcePath = 'src/main/generated'
+
+}
+
+
+repositories {
+	mavenCentral()
+}
+
+configurations {
+	querydslapt
+	providedRuntime
+}
+
+flyway {
+	driver = postgresDriver
+	url = postgresUrl
+	user = postgresUser
+	password = postgresPassword
+	baselineOnMigrate = true
+}
+
+dependencies {
+	compile('org.springframework.boot:spring-boot-starter-data-jpa')
+	compile('org.springframework.boot:spring-boot-starter-data-redis')
+	compile('org.springframework.boot:spring-boot-starter-jdbc')
+	compile('org.springframework.boot:spring-boot-starter-security')
+	compile('org.springframework.boot:spring-boot-starter-web')
+	compile('org.springframework.boot:spring-boot-starter-websocket')
+    compile("org.springframework:spring-jdbc")
+
+
+	runtime('com.h2database:h2')
+	runtime('org.postgresql:postgresql')
+
+
+	providedRuntime('org.springframework.boot:spring-boot-starter-tomcat')
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+
+    //flyway
+    compile('org.flywaydb:flyway-core')
+
+	//swagger
+	compile('io.swagger:swagger-jaxrs:1.5.8')
+
+
+	//querydsl
+    compile("com.querydsl:querydsl-core:4.1.4")
+    compile("com.querydsl:querydsl-jpa:4.1.4")
+    compile("com.querydsl:querydsl-apt:4.1.4")
+    querydslapt('com.querydsl:querydsl-apt:4.1.3')
+
+
+    //commons lang
+    compile("org.apache.commons:commons-lang3:3.2.1")
+
+
+    //ehcache
+    compile('org.hibernate:hibernate-ehcache:5.0.1.Final')
+
+    compile  ('org.threeten:threetenbp:0.7.2')
+
+    //apache cxf
+    compile('org.apache.cxf:cxf-rt-frontend-jaxrs:3.1.6')
+    compile('org.apache.cxf:cxf-rt-rs-service-description:3.1.6')
+    compile('org.apache.cxf:cxf-rt-rs-security-cors:3.1.6')
+
+	//Mapper framework
+	compile('org.modelmapper:modelmapper:0.7.6')
+
+	//Amazon SDK
+	compile ('com.amazonaws:aws-java-sdk-s3:1.11.56')
+}
+
+sourceSets {
+    generated {
+        java {
+            srcDirs = ['src/main/generated']
+        }
+    }
+
+    itest {
+        java {
+            srcDirs = ['src/itest/java']
+        }
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+task generateQueryDSL(type: JavaCompile, group: 'build', description: 'Generates the QueryDSL query types') {
+	source = sourceSets.main.java
+	classpath = configurations.compile + configurations.querydslapt
+	options.compilerArgs = [
+			"-proc:only",
+			"-processor", "com.querydsl.apt.jpa.JPAAnnotationProcessor"
+	]
+	destinationDir = sourceSets.generated.java.srcDirs.iterator().next()
+}
+
+compileJava {
+	dependsOn generateQueryDSL
+	source generateQueryDSL.destinationDir
+}
+
+
+compileGeneratedJava {
+	dependsOn generateQueryDSL
+	options.warnings = false
+	classpath += sourceSets.main.runtimeClasspath
+}
+
+clean {
+	delete sourceSets.generated.java.srcDirs
+}
+
+idea {
+	module {
+		sourceDirs += file('src/main/generated')
+	}
+}
+
+def executeSql(String statement, Boolean includeDbName = false) {
+	def connectionString = "jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDbName}"
+
+	configurations.classpath.each { file ->
+		gradle.class.classLoader.addURL(file.toURI().toURL())
+	}
+
+	println connectionString
+
+	Sql.newInstance(connectionString, postgresUser, postgresPassword, postgresDriver).execute(statement)
+}
+

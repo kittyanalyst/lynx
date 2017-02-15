@@ -1,0 +1,23 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Please Log In</title>
+</head>
+<body>
+
+<div>
+    <form th:action="${idpDiscoReturnURL}" method="get">
+        <fieldset>
+            <legend>Single Sign On</legend>
+            <p th:each="idp : ${idps}">
+                <input type="radio" th:name="${idpDiscoReturnParam}" th:id="'idp_' + ${idp}"
+                       th:value="${idp}" /> Okta
+            </p>
+            <input class="btn btn-default" type="submit"
+                   value="Start single sign-on" />
+        </fieldset>
+    </form>
+</div>
+</body>
+</html>
