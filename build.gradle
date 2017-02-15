@@ -113,6 +113,9 @@ dependencies {
 
 	//Amazon SDK
 	compile ('com.amazonaws:aws-java-sdk-s3:1.11.56')
+
+	//javaslang
+	compile ('io.javaslang:javaslang:2.0.3')
 }
 
 sourceSets {
