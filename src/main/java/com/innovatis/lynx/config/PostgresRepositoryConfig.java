@@ -30,7 +30,7 @@ import javax.sql.DataSource;
 @Profile({Profiles.APPLICATION})
 @EnableJpaAuditing(dateTimeProviderRef = "dateTimeProvider")
 @Configuration
-@EnableJpaRepositories(basePackages = {"com.innovatis.lynx.user.repository"},
+@EnableJpaRepositories(basePackages = {"com.innovatis.lynx.user.repository, com.innovatis.lynx.document.repository "},
         entityManagerFactoryRef = "postgresEntityManagerFactory",
         transactionManagerRef = "postgresTransactionManager")
 public class PostgresRepositoryConfig {
@@ -46,7 +46,8 @@ public class PostgresRepositoryConfig {
     @Bean(name = "postgresEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean postgresEntityManager(EntityManagerFactoryBuilder builder) {
         return builder.dataSource(postgresDataSource())
-                .packages("com.innovatis.lynx.user.domain")
+                .packages("com.innovatis.lynx.user.domain," +
+                        "com.innovatis.lynx.document.domain")
                 .persistenceUnit("postgresPersistenceUnit")
                 .build();
     }
